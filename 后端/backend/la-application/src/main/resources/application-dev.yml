@@ -1,0 +1,39 @@
+# 开发环境配置
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/learning_assistant?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+
+  redis:
+    host: localhost
+    port: 6379
+    password:
+    database: 0
+    timeout: 10000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+
+# 文件上传配置
+upload:
+  base-path: ./uploads
+  avatar-dir: ./uploads/avatar
+  resource-dir: ./uploads/resources
+
+# 日志配置
+logging:
+  level:
+    com.learning: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG

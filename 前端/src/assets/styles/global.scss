@@ -1,0 +1,487 @@
+/* ================================================
+   全局样式 - 专业教育平台设计风格
+   减少AI味，增加自然层次感
+   ================================================ */
+
+/* CSS变量定义 - 三端主题色 */
+:root {
+  /* 学生端 - 橙色系 */
+  --student-primary: #FF8C42;
+  --student-primary-light: #FFB380;
+  --student-primary-dark: #E67332;
+  --student-bg-gradient: linear-gradient(135deg, #FFF5EE 0%, #FFE4D6 100%);
+  
+  /* 教师端 - 绿色系 */
+  --teacher-primary: #34A853;
+  --teacher-primary-light: #81D98B;
+  --teacher-primary-dark: #1E8449;
+  --teacher-bg-gradient: linear-gradient(135deg, #F0FFF4 0%, #D4EDDA 100%);
+  
+  /* 管理员端 - 紫色系 */
+  --admin-primary: #7C4DFF;
+  --admin-primary-light: #B388FF;
+  --admin-primary-dark: #651FFF;
+  --admin-bg-gradient: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
+  
+  /* 通用色彩 */
+  --text-primary: #2D3436;
+  --text-secondary: #636E72;
+  --text-muted: #B2BEC3;
+  --bg-primary: #FAFBFC;
+  --bg-card: #FFFFFF;
+  --border-color: #E8ECEF;
+  --border-light: #F0F2F5;
+  
+  /* 阴影层次 */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.1);
+  
+  /* 圆角层次 - 不统一，增加自然感 */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-round: 50%;
+  
+  /* 间距层次 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  
+  /* 字体 */
+  --font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 30px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+#app {
+  height: 100%;
+}
+
+/* ================================================
+   页面容器
+   ================================================ */
+.page-container {
+  padding: var(--space-lg);
+  min-height: calc(100vh - 60px);
+  background: var(--bg-primary);
+}
+
+/* ================================================
+   卡片系统 - 增加层次变化
+   ================================================ */
+.card-container {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-light);
+}
+
+.card-container:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* 大卡片 - 占据主要内容区 */
+.card-large {
+  padding: var(--space-xl);
+  border-radius: var(--radius-xl);
+}
+
+/* 中卡片 - 常规使用 */
+.card-medium {
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+}
+
+/* 小卡片 - 紧凑展示 */
+.card-small {
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+}
+
+/* 特殊卡片 - 突出展示 */
+.card-highlight {
+  background: linear-gradient(145deg, #FFFFFF 0%, #F8F9FA 100%);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-highlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--student-primary), var(--teacher-primary), var(--admin-primary));
+}
+
+/* ================================================
+   标题系统
+   ================================================ */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.page-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: var(--space-xs);
+}
+
+/* ================================================
+   弹性布局工具
+   ================================================ */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.flex-center { display: flex; justify-content: center; align-items: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.flex-start { display: flex; justify-content: flex-start; align-items: center; }
+.flex-end { display: flex; justify-content: flex-end; align-items: center; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-1 { flex: 1; }
+.flex-shrink-0 { flex-shrink: 0; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+
+/* 间距 */
+.gap-xs { gap: var(--space-xs); }
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+.gap-lg { gap: var(--space-lg); }
+.gap-xl { gap: var(--space-xl); }
+
+/* ================================================
+   间距系统 - 不规则层次
+   ================================================ */
+.m-0 { margin: 0; }
+.mt-xs { margin-top: var(--space-xs); }
+.mt-sm { margin-top: var(--space-sm); }
+.mt-md { margin-top: var(--space-md); }
+.mt-lg { margin-top: var(--space-lg); }
+.mt-xl { margin-top: var(--space-xl); }
+.mt-2xl { margin-top: var(--space-2xl); }
+
+.mb-xs { margin-bottom: var(--space-xs); }
+.mb-sm { margin-bottom: var(--space-sm); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.mb-xl { margin-bottom: var(--space-xl); }
+
+.ml-xs { margin-left: var(--space-xs); }
+.ml-sm { margin-left: var(--space-sm); }
+.ml-md { margin-left: var(--space-md); }
+.ml-lg { margin-left: var(--space-lg); }
+
+.mr-xs { margin-right: var(--space-xs); }
+.mr-sm { margin-right: var(--space-sm); }
+.mr-md { margin-right: var(--space-md); }
+.mr-lg { margin-right: var(--space-lg); }
+
+.p-xs { padding: var(--space-xs); }
+.p-sm { padding: var(--space-sm); }
+.p-md { padding: var(--space-md); }
+.p-lg { padding: var(--space-lg); }
+.p-xl { padding: var(--space-xl); }
+
+.px-sm { padding-left: var(--space-sm); padding-right: var(--space-sm); }
+.px-md { padding-left: var(--space-md); padding-right: var(--space-md); }
+.px-lg { padding-left: var(--space-lg); padding-right: var(--space-lg); }
+
+.py-sm { padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+.py-md { padding-top: var(--space-md); padding-bottom: var(--space-md); }
+.py-lg { padding-top: var(--space-lg); padding-bottom: var(--space-lg); }
+
+/* ================================================
+   文字系统
+   ================================================ */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+
+.text-primary { color: var(--student-primary); }
+.text-success { color: var(--teacher-primary); }
+.text-warning { color: #FFA726; }
+.text-danger { color: #EF5350; }
+.text-muted { color: var(--text-muted); }
+.text-secondary { color: var(--text-secondary); }
+
+.font-bold { font-weight: 700; }
+.font-medium { font-weight: 500; }
+.font-normal { font-weight: 400; }
+
+.leading-tight { line-height: 1.3; }
+.leading-normal { line-height: 1.6; }
+.leading-relaxed { line-height: 1.8; }
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 字号 */
+.text-xs { font-size: var(--font-size-xs); }
+.text-sm { font-size: var(--font-size-sm); }
+.text-base { font-size: var(--font-size-base); }
+.text-md { font-size: var(--font-size-md); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+.text-2xl { font-size: var(--font-size-2xl); }
+.text-3xl { font-size: var(--font-size-3xl); }
+.text-4xl { font-size: var(--font-size-4xl); }
+
+/* ================================================
+   滚动条 - 扁平现代风格
+   ================================================ */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* ================================================
+   动画
+   ================================================ */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
+/* ================================================
+   空状态 - 简洁设计
+   ================================================ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-2xl) var(--space-lg);
+  color: var(--text-muted);
+}
+
+.empty-state .empty-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--space-md);
+  opacity: 0.5;
+}
+
+.empty-state .empty-text {
+  font-size: var(--font-size-md);
+}
+
+/* ================================================
+   加载状态
+   ================================================ */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* ================================================
+   标签系统 - 减少使用，保持简洁
+   ================================================ */
+.tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.tag-item {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-xs);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+}
+
+/* ================================================
+   分隔线 - 更自然
+   ================================================ */
+.divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: var(--space-lg) 0;
+}
+
+.divider-dashed {
+  border: none;
+  border-top: 1px dashed var(--border-color);
+}
+
+/* ================================================
+   头像 - 去掉边框，增加层次
+   ================================================ */
+.avatar {
+  border-radius: var(--radius-round);
+  object-fit: cover;
+}
+
+.avatar-sm {
+  width: 32px;
+  height: 32px;
+}
+
+.avatar-md {
+  width: 40px;
+  height: 40px;
+}
+
+.avatar-lg {
+  width: 56px;
+  height: 56px;
+}
+
+.avatar-xl {
+  width: 72px;
+  height: 72px;
+}
+
+/* ================================================
+   渐变背景 - 柔和自然
+   ================================================ */
+.gradient-warm {
+  background: linear-gradient(135deg, #FFF8F0 0%, #FFF0E6 50%, #FFE8D6 100%);
+}
+
+.gradient-cool {
+  background: linear-gradient(135deg, #F0F8FF 0%, #E6F2FF 50%, #D6EBFF 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, #F8F0FF 0%, #F0E6FF 50%, #E8D6FF 100%);
+}
+
+/* ================================================
+   按钮基础 - 去AI模板感
+   ================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* ================================================
+   响应式
+   ================================================ */
+@media (max-width: 768px) {
+  .page-container {
+    padding: var(--space-md);
+  }
+  
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
