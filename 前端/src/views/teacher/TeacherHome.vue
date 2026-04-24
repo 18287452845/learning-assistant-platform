@@ -31,8 +31,8 @@
           </div>
           
           <div class="question-list">
-            <div 
-              v-for="q in recentQuestions" 
+            <div
+              v-for="q in recentQuestions"
               :key="q.id"
               class="question-item"
               @click="answerQuestion(q)"
@@ -110,7 +110,7 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { mockQuestions, mockStatistics } from '@/mock/data'
+import { getPendingRequests, getQARequestStatistics } from '@/api/qa'
 import * as echarts from 'echarts'
 
 const router = useRouter()
@@ -120,10 +120,10 @@ const trendChartRef = ref(null)
 let typeChart = null
 let trendChart = null
 
-const pendingQuestions = ref(5)
-const answeredQuestions = ref(128)
-const studentCount = ref(156)
-const todayAnswers = ref(12)
+const pendingQuestions = ref(0)
+const answeredQuestions = ref(0)
+const studentCount = ref(0)
+const todayAnswers = ref(0)
 
 const statsData = [
   { value: pendingQuestions, label: '待答疑', gradient: 'linear-gradient(135deg, #FF8A80, #FF5252)' },
@@ -132,15 +132,12 @@ const statsData = [
   { value: todayAnswers, label: '今日回答', gradient: 'linear-gradient(135deg, #69F0AE, #00E676)' }
 ]
 
-const recentQuestions = ref(mockQuestions.slice(0, 4))
+const recentQuestions = ref([])
 
-const highFrequencyKeywords = [
-  { text: '如何理解递归算法', count: 45 },
-  { text: '数据库索引原理', count: 38 },
-  { text: '前端性能优化', count: 32 },
-  { text: '设计模式应用', count: 28 },
-  { text: 'Git协作流程', count: 24 }
-]
+const highFrequencyKeywords = ref([])
+
+// Store stats data from API for chart rendering
+let statsDataFromAPI = null
 
 const answerQuestion = (q) => {
   ElMessage.info('跳转到回答页面...')
@@ -151,7 +148,7 @@ const initCharts = () => {
   if (typeChartRef.value) {
     typeChart = echarts.init(typeChartRef.value)
     typeChart.setOption({
-      tooltip: { 
+      tooltip: {
         trigger: 'item',
         backgroundColor: 'rgba(255,255,255,0.95)',
         borderColor: '#E8ECEF',
@@ -170,12 +167,12 @@ const initCharts = () => {
         label: {
           show: false
         },
-        data: mockStatistics.questionTypes
+        data: statsDataFromAPI?.questionTypes || []
       }],
       color: ['#FF8A80', '#82B1FF', '#69F0AE', '#FFD180', '#B388FF']
     })
   }
-  
+
   // 问答趋势
   if (trendChartRef.value) {
     trendChart = echarts.init(trendChartRef.value)
@@ -221,7 +218,7 @@ const initCharts = () => {
             },
             borderRadius: [4, 4, 0, 0]
           },
-          data: [12, 18, 15, 22, 19, 25, 20]
+          data: statsDataFromAPI?.weeklyTrend || [0, 0, 0, 0, 0, 0, 0]
         }
       ]
     })
@@ -233,7 +230,41 @@ const handleResize = () => {
   trendChart?.resize()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  try {
+    const [pendingRes, statsRes] = await Promise.all([
+      getPendingRequests({ page: 1, size: 5 }),
+      getQARequestStatistics()
+    ])
+
+    // Handle pending questions
+    if (pendingRes.data?.records) {
+      recentQuestions.value = pendingRes.data.records.map(q => ({
+        id: q.id,
+        title: q.question,
+        course: q.courseName,
+        student: q.studentName,
+        time: q.createTime
+      }))
+      pendingQuestions.value = pendingRes.data.total || recentQuestions.value.length
+    }
+
+    // Handle statistics
+    if (statsRes.data) {
+      statsDataFromAPI = statsRes.data
+      pendingQuestions.value = statsRes.data.pendingCount ?? pendingQuestions.value
+      answeredQuestions.value = statsRes.data.answeredCount ?? 0
+      studentCount.value = statsRes.data.studentCount ?? 0
+      todayAnswers.value = statsRes.data.todayAnswerCount ?? 0
+
+      if (statsRes.data.highFrequencyKeywords) {
+        highFrequencyKeywords.value = statsRes.data.highFrequencyKeywords
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load teacher home data:', e)
+  }
+
   initCharts()
   window.addEventListener('resize', handleResize)
 })

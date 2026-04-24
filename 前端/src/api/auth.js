@@ -1,10 +1,10 @@
-import request from './index'
+import request from '@/utils/request'
 
 // 认证相关API
 
 /**
  * 用户登录
- * @param {Object} data { username, password, role }
+ * @param {Object} data { username, password }
  */
 export function login(data) {
   return request.post('/auth/login', data)
@@ -38,11 +38,4 @@ export function logout() {
  */
 export function getCaptcha() {
   return request.get('/auth/captcha')
-}
-
-/**
- * 刷新Token
- */
-export function refreshToken() {
-  return request.post('/auth/refresh')
 }

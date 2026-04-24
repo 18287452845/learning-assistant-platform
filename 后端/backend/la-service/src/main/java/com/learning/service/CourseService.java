@@ -36,6 +36,7 @@ public class CourseService {
     private final CourseMapper courseMapper;
     private final ResourceMapper resourceMapper;
     private final UserMapper userMapper;
+    private final FileService fileService;
 
     /**
      * 获取课程列表
@@ -127,17 +128,17 @@ public class CourseService {
     }
 
     /**
-     * 上传资源（Mock实现）
+     * 上传资源
      */
     @Transactional(rollbackFor = Exception.class)
-    public ResourceVO uploadResource(Long uploaderId, Long courseId, String title, 
+    public ResourceVO uploadResource(Long uploaderId, Long courseId, String title,
                                       String description, MultipartFile file) {
         // 验证课程
         Course course = courseMapper.selectById(courseId);
         if (course == null) {
             throw BusinessException.notFound("课程不存在");
         }
-        
+
         // 验证用户
         User uploader = userMapper.selectById(uploaderId);
         if (uploader == null) {
@@ -155,15 +156,13 @@ public class CourseService {
         // 获取文件信息
         String originalFilename = file.getOriginalFilename();
         String fileType = getFileType(originalFilename);
-        
+
         // 验证文件类型
         if (!isAllowedFileType(fileType)) {
             throw BusinessException.paramError("不支持的文件类型");
         }
 
-        // Mock实现：本地存储
-        // 实际项目中需要上传到OSS
-        String filePath = "/uploads/resources/" + UUID.randomUUID().toString() + "/" + originalFilename;
+        String filePath = fileService.uploadResource(file);
 
         // 创建资源记录
         Resource resource = new Resource();
@@ -177,7 +176,7 @@ public class CourseService {
         resource.setParseStatus(0);
         resource.setVectorStatus(0);
         resource.setDownloadCount(0);
-        resource.setStatus(Constants.ResourceStatus.PENDING); // 待审核
+        resource.setStatus(Constants.ResourceStatus.PENDING);
         resource.setUploaderId(uploaderId);
         resource.setUploaderName(uploader.getRealName());
         resourceMapper.insert(resource);
@@ -199,17 +198,20 @@ public class CourseService {
         if (resource == null) {
             throw BusinessException.notFound("资源不存在");
         }
-        
+
         // 验证权限（只能删除自己的资源）
         if (!resource.getUploaderId().equals(userId)) {
             throw BusinessException.forbidden("无权删除此资源");
         }
-        
+
+        // 删除文件
+        fileService.deleteFile(resource.getFilePath());
+
         // 更新课程资源数量
         courseMapper.updateResourceCount(resource.getCourseId());
-        
+
         resourceMapper.deleteById(resourceId);
-        
+
         log.info("资源删除成功: resourceId={}, userId={}", resourceId, userId);
     }
 
@@ -252,7 +254,7 @@ public class CourseService {
      */
     public PageResult<ResourceVO> getPendingResources(Integer page, Integer size) {
         Page<Resource> pageInfo = new Page<>(page, size);
-        Page<Resource> result = resourceMapper.selectPendingResources(pageInfo);
+        var result = resourceMapper.selectPendingResources(pageInfo);
         
         List<ResourceVO> records = result.getRecords().stream()
             .map(this::convertToResourceVO)

@@ -4,6 +4,7 @@ import com.learning.common.result.PageResult;
 import com.learning.common.result.Result;
 import com.learning.domain.dto.QARequestDTO;
 import com.learning.domain.vo.QuestionRecordVO;
+import com.learning.infra.security.SecurityUtils;
 import com.learning.service.QAService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class QAController {
 
     private final QAService qaService;
+    private final SecurityUtils securityUtils;
 
     /**
      * 智能问答
@@ -34,8 +36,7 @@ public class QAController {
     public Result<QuestionRecordVO> askQuestion(
             @RequestParam(defaultValue = "global") String type,
             @Valid @RequestBody QARequestDTO requestDTO) {
-        // 实际应从SecurityContext获取当前用户ID
-        Long userId = 1L;
+        Long userId = securityUtils.getCurrentUserId();
         QuestionRecordVO result = qaService.askQuestion(userId, requestDTO);
         return Result.success(result);
     }
@@ -49,8 +50,7 @@ public class QAController {
             @RequestParam(required = false) Long courseId,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
-        // 实际应从SecurityContext获取当前用户ID
-        Long userId = 1L;
+        Long userId = securityUtils.getCurrentUserId();
         PageResult<QuestionRecordVO> result = qaService.getQuestionHistory(userId, courseId, page, size);
         return Result.success(result);
     }
@@ -61,8 +61,7 @@ public class QAController {
     @Operation(summary = "获取问答详情", description = "根据ID获取问答记录详情")
     @GetMapping("/{recordId}")
     public Result<QuestionRecordVO> getQuestionById(@PathVariable Long recordId) {
-        // 实际应从SecurityContext获取当前用户ID
-        Long userId = 1L;
+        Long userId = securityUtils.getCurrentUserId();
         QuestionRecordVO result = qaService.getQuestionById(recordId, userId);
         return Result.success(result);
     }
@@ -75,8 +74,7 @@ public class QAController {
     public Result<Void> rateQuestion(
             @PathVariable Long recordId,
             @RequestParam Integer helpful) {
-        // 实际应从SecurityContext获取当前用户ID
-        Long userId = 1L;
+        Long userId = securityUtils.getCurrentUserId();
         qaService.rateQuestion(recordId, userId, helpful);
         return Result.success();
     }

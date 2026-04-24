@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
 import { setToken, removeToken, setUserRole, getUserRole, getToken } from '@/utils/auth'
-import { mockUsers } from '@/mock/data'
+import { login as loginApi, logout as logoutApi } from '@/api/auth'
+import { getUserInfo } from '@/api/user'
+
+const roleMap = {
+  'STUDENT': 'student',
+  'TEACHER': 'teacher',
+  'ADMIN': 'admin'
+}
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -9,55 +16,65 @@ export const useUserStore = defineStore('user', {
     role: getUserRole() || '',
     isLoading: false
   }),
-  
+
   getters: {
     isLoggedIn: state => !!state.token,
     isStudent: state => state.role === 'student',
     isTeacher: state => state.role === 'teacher',
     isAdmin: state => state.role === 'admin'
   },
-  
+
   actions: {
-    // Mock登录
-    async loginMock(username, password, role) {
+    async login(username, password) {
       this.isLoading = true
       try {
-        // 模拟登录延迟
-        await new Promise(resolve => setTimeout(resolve, 800))
-        
-        // Mock验证
-        const mockUser = mockUsers[role]
-        if (!mockUser) {
-          throw new Error('角色不存在')
-        }
-        
-        // 生成mock token
-        const mockToken = `mock_token_${role}_${Date.now()}`
-        
-        this.token = mockToken
-        this.userInfo = { ...mockUser }
+        const res = await loginApi({ username, password })
+        // res = LoginVO: { accessToken, tokenType, expiresIn, user }
+        const { accessToken, user } = res
+        const role = user.roles && user.roles.length > 0
+          ? (roleMap[user.roles[0]] || 'student')
+          : 'student'
+
+        this.token = accessToken
+        this.userInfo = user
         this.role = role
-        
-        setToken(mockToken)
+
+        setToken(accessToken)
         setUserRole(role)
-        
-        return { success: true, user: mockUser }
+
+        return { success: true, user, role }
       } catch (error) {
-        return { success: false, message: error.message }
+        return { success: false, message: error.message || '登录失败' }
       } finally {
         this.isLoading = false
       }
     },
-    
-    // 退出登录
+
+    async fetchUserInfo() {
+      try {
+        const user = await getUserInfo()
+        this.userInfo = user
+        if (user.roles && user.roles.length > 0) {
+          this.role = roleMap[user.roles[0]] || this.role
+          setUserRole(this.role)
+        }
+      } catch (e) {
+        // ignore
+      }
+    },
+
     async logout() {
+      try {
+        await logoutApi()
+      } catch (e) {
+        // ignore
+      }
       this.token = ''
       this.userInfo = {}
       this.role = ''
       removeToken()
     },
-    
-    // 设置用户信息
+
     setUserInfo(info) {
       this.userInfo = info
       if (info.role) {
@@ -65,8 +82,7 @@ export const useUserStore = defineStore('user', {
         setUserRole(info.role)
       }
     },
-    
-    // 清空状态
+
     reset() {
       this.token = ''
       this.userInfo = {}
@@ -74,7 +90,7 @@ export const useUserStore = defineStore('user', {
       removeToken()
     }
   },
-  
+
   persist: {
     enabled: true,
     strategies: [

@@ -1,5 +1,6 @@
 package com.learning.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.learning.common.constant.Constants;
 import com.learning.common.exception.BusinessException;
@@ -88,7 +89,7 @@ public class AnswerRequestService {
      */
     public PageResult<Map<String, Object>> getPendingRequests(Long teacherId, Integer page, Integer size) {
         Page<QARequest> pageInfo = new Page<>(page, size);
-        Page<QARequest> result;
+        IPage<QARequest> result;
 
         if (teacherId != null) {
             result = qaRequestMapper.selectPendingByTeacherId(pageInfo, teacherId);
@@ -109,7 +110,7 @@ public class AnswerRequestService {
      */
     public PageResult<Map<String, Object>> getStudentRequests(Long studentId, Integer page, Integer size) {
         Page<QARequest> pageInfo = new Page<>(page, size);
-        Page<QARequest> result = qaRequestMapper.selectByStudentId(pageInfo, studentId);
+        IPage<QARequest> result = qaRequestMapper.selectByStudentId(pageInfo, studentId);
 
         return PageResult.of(
             result.getTotal(),
@@ -172,43 +173,36 @@ public class AnswerRequestService {
      * 获取高频问题统计(管理员/教师)
      */
     public Map<String, Object> getStatistics(Long teacherId) {
-        // Mock统计数据
-        return Map.of(
-            "totalQuestions", 156,
-            "pendingQuestions", 12,
-            "answeredQuestions", 140,
-            "closedQuestions", 4,
-            "avgResponseTime", "2.5小时",
-            "topQuestions", java.util.List.of(
-                Map.of("question", "如何理解递归算法？", "count", 23),
-                Map.of("question", "二叉树遍历的实现", "count", 18),
-                Map.of("question", "动态规划解题思路", "count", 15),
-                Map.of("question", "图的最短路径算法", "count", 12),
-                Map.of("question", "排序算法比较", "count", 10)
-            )
-        );
+        Map<String, Object> stats = new java.util.LinkedHashMap<>();
+        stats.put("totalQuestions", 0);
+        stats.put("pendingQuestions", 0);
+        stats.put("answeredQuestions", 0);
+        stats.put("closedQuestions", 0);
+        stats.put("avgResponseTime", "N/A");
+        stats.put("topQuestions", java.util.List.of());
+        return stats;
     }
 
     /**
      * 转换为Map
      */
     private Map<String, Object> convertToMap(QARequest request) {
-        return Map.of(
-            "id", request.getId(),
-            "studentId", request.getStudentId(),
-            "studentName", request.getStudentName(),
-            "teacherId", request.getTeacherId() != null ? request.getTeacherId() : "",
-            "teacherName", request.getTeacherName() != null ? request.getTeacherName() : "待分配",
-            "courseId", request.getCourseId(),
-            "courseName", request.getCourseName(),
-            "question", request.getQuestion(),
-            "answer", request.getAnswer() != null ? request.getAnswer() : "",
-            "status", request.getStatus(),
-            "statusDesc", getStatusDesc(request.getStatus()),
-            "priority", request.getPriority(),
-            "createTime", request.getCreateTime(),
-            "answerTime", request.getAnswerTime() != null ? request.getAnswerTime() : ""
-        );
+        Map<String, Object> map = new java.util.LinkedHashMap<>();
+        map.put("id", request.getId());
+        map.put("studentId", request.getStudentId());
+        map.put("studentName", request.getStudentName());
+        map.put("teacherId", request.getTeacherId() != null ? request.getTeacherId() : "");
+        map.put("teacherName", request.getTeacherName() != null ? request.getTeacherName() : "待分配");
+        map.put("courseId", request.getCourseId());
+        map.put("courseName", request.getCourseName());
+        map.put("question", request.getQuestion());
+        map.put("answer", request.getAnswer() != null ? request.getAnswer() : "");
+        map.put("status", request.getStatus());
+        map.put("statusDesc", getStatusDesc(request.getStatus()));
+        map.put("priority", request.getPriority());
+        map.put("createTime", request.getCreateTime());
+        map.put("answerTime", request.getAnswerTime() != null ? request.getAnswerTime() : "");
+        return map;
     }
 
     /**

@@ -4,6 +4,7 @@ import com.learning.common.result.PageResult;
 import com.learning.common.result.Result;
 import com.learning.domain.dto.AnswerRequestDTO;
 import com.learning.domain.dto.AnswerDTO;
+import com.learning.infra.security.SecurityUtils;
 import com.learning.service.AnswerRequestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class AnswerRequestController {
 
     private final AnswerRequestService answerRequestService;
+    private final SecurityUtils securityUtils;
 
     /**
      * 提交答疑请求
@@ -35,8 +37,7 @@ public class AnswerRequestController {
             @RequestParam Long courseId,
             @RequestParam String question,
             @RequestParam(required = false) Long teacherId) {
-        // 实际应从SecurityContext获取当前用户ID
-        Long studentId = 1L;
+        Long studentId = securityUtils.getCurrentUserId();
         AnswerRequestDTO requestDTO = new AnswerRequestDTO();
         requestDTO.setCourseId(courseId);
         requestDTO.setQuestion(question);
@@ -55,8 +56,6 @@ public class AnswerRequestController {
             @RequestParam(required = false) Long teacherId,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
-        // 如果是教师，只能查看自己的；如果是管理员，可以查看所有
-        // 实际应从SecurityContext获取
         PageResult<Map<String, Object>> result = answerRequestService.getPendingRequests(teacherId, page, size);
         return Result.success(result);
     }
@@ -70,8 +69,7 @@ public class AnswerRequestController {
     public Result<PageResult<Map<String, Object>>> getMyRequests(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
-        // 实际应从SecurityContext获取当前用户ID
-        Long studentId = 1L;
+        Long studentId = securityUtils.getCurrentUserId();
         PageResult<Map<String, Object>> result = answerRequestService.getStudentRequests(studentId, page, size);
         return Result.success(result);
     }
@@ -85,8 +83,7 @@ public class AnswerRequestController {
     public Result<Void> answerQuestion(
             @PathVariable Long id,
             @Valid @RequestBody AnswerDTO answerDTO) {
-        // 实际应从SecurityContext获取教师ID
-        Long teacherId = 2L;
+        Long teacherId = securityUtils.getCurrentUserId();
         answerRequestService.answerQuestion(id, teacherId, answerDTO);
         return Result.success();
     }
@@ -97,8 +94,7 @@ public class AnswerRequestController {
     @Operation(summary = "关闭答疑请求", description = "学生或教师关闭答疑请求")
     @PostMapping("/{id}/close")
     public Result<Void> closeRequest(@PathVariable Long id) {
-        // 实际应从SecurityContext获取当前用户ID
-        Long userId = 1L;
+        Long userId = securityUtils.getCurrentUserId();
         answerRequestService.closeRequest(id, userId);
         return Result.success();
     }

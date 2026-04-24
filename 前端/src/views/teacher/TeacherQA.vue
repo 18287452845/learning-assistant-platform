@@ -28,8 +28,8 @@
         <el-table-column prop="views" label="浏览数" width="100" align="center" />
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'answered' ? 'success' : 'warning'" size="small">
-              {{ row.status === 'answered' ? '已回答' : '待处理' }}
+            <el-tag :type="row.status === 1 ? 'success' : 'warning'" size="small">
+              {{ row.status === 1 ? '已回答' : row.status === 2 ? '已关闭' : '待处理' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -96,29 +96,59 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { mockQuestions } from '@/mock/data'
+import { getPendingRequests, answerQuestion as answerQuestionAPI } from '@/api/qa'
 
 const statusFilter = ref('pending')
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(mockQuestions.length)
+const total = ref(0)
 const showAnswerDialog = ref(false)
 const currentQuestion = ref(null)
 const answerContent = ref('')
 const selectedKnowledge = ref([])
 
-const questions = reactive([...mockQuestions])
+const questions = reactive([])
 
 const pendingCount = computed(() => {
-  return questions.filter(q => q.status === 'pending').length
+  return questions.filter(q => q.status === 0).length
 })
 
 const filteredQuestions = computed(() => {
   if (statusFilter.value === 'all') return questions
-  return questions.filter(q => q.status === statusFilter.value)
+  const statusValue = statusFilter.value === 'pending' ? 0 : 1
+  return questions.filter(q => q.status === statusValue)
 })
+
+const statusLabel = (status) => {
+  const map = { 0: 'pending', 1: 'answered', 2: 'closed' }
+  return map[status] ?? 'pending'
+}
+
+const loadData = async () => {
+  try {
+    const res = await getPendingRequests({ page: 1, size: 20 })
+    if (res.data?.records) {
+      questions.splice(0, questions.length)
+      res.data.records.forEach(q => {
+        questions.push({
+          id: q.id,
+          title: q.question,
+          course: q.courseName,
+          student: q.studentName,
+          time: q.createTime,
+          answers: 0,
+          views: 0,
+          status: q.status
+        })
+      })
+      total.value = res.data.total || questions.length
+    }
+  } catch (e) {
+    console.error('Failed to load pending requests:', e)
+  }
+}
 
 const viewDetail = (row) => {
   currentQuestion.value = row
@@ -132,22 +162,26 @@ const answerQuestion = (row) => {
   showAnswerDialog.value = true
 }
 
-const submitAnswer = () => {
+const submitAnswer = async () => {
   if (!answerContent.value.trim()) {
     ElMessage.warning('请输入回答内容')
     return
   }
-  
-  // 模拟提交
-  const index = questions.findIndex(q => q.id === currentQuestion.value.id)
-  if (index > -1) {
-    questions[index].status = 'answered'
-    questions[index].answers++
+
+  try {
+    await answerQuestionAPI(currentQuestion.value.id, { answer: answerContent.value })
+    showAnswerDialog.value = false
+    ElMessage.success('回答提交成功')
+    loadData()
+  } catch (e) {
+    console.error('Failed to submit answer:', e)
+    ElMessage.error('回答提交失败')
   }
-  
-  showAnswerDialog.value = false
-  ElMessage.success('回答提交成功')
 }
+
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style lang="scss" scoped>

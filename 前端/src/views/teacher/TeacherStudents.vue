@@ -58,26 +58,51 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { mockStudentList } from '@/mock/data'
+import { getUserList } from '@/api/admin'
 
 const searchKeyword = ref('')
 const statusFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(mockStudentList.length)
+const total = ref(0)
 
-const students = reactive([...mockStudentList])
+const students = reactive([])
 
 const filteredStudents = computed(() => {
   return students.filter(s => {
-    const matchKeyword = !searchKeyword.value || 
-      s.name.includes(searchKeyword.value) || s.id.includes(searchKeyword.value) || s.class.includes(searchKeyword.value)
+    const matchKeyword = !searchKeyword.value ||
+      s.name.includes(searchKeyword.value) || s.id.includes(searchKeyword.value)
     const matchStatus = !statusFilter.value || s.status === statusFilter.value
     return matchKeyword && matchStatus
   })
 })
+
+const loadData = async () => {
+  try {
+    const res = await getUserList({ page: 1, size: 20 })
+    if (res.data?.records) {
+      students.splice(0, students.length)
+      res.data.records
+        .filter(u => u.roles && u.roles.includes('STUDENT'))
+        .forEach(u => {
+          students.push({
+            id: u.username || u.id,
+            name: u.realName || u.name || '-',
+            class: '-',
+            questions: 0,
+            answers: 0,
+            lastActive: u.lastLoginTime || '-',
+            status: u.statusDesc === '正常' ? 'active' : 'inactive'
+          })
+        })
+      total.value = students.length
+    }
+  } catch (e) {
+    console.error('Failed to load student list:', e)
+  }
+}
 
 const viewDetail = (row) => {
   ElMessage.info(`查看学生 ${row.name} 的详细信息...`)
@@ -90,6 +115,10 @@ const sendMessage = (row) => {
 const viewLearningRecord = (row) => {
   ElMessage.info(`查看学生 ${row.name} 的学习记录...`)
 }
+
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style lang="scss" scoped>

@@ -1,13 +1,13 @@
-import request from './index'
+import request from '@/utils/request'
 
 // 课程相关API
 
 /**
  * 获取课程列表
- * @param {Object} params
+ * @param {Object} params { keyword, categoryId, teacherId, status, page, size }
  */
 export function getCourseList(params) {
-  return request.get('/course/list', { params })
+  return request.get('/courses', { params })
 }
 
 /**
@@ -15,21 +15,7 @@ export function getCourseList(params) {
  * @param {number} id
  */
 export function getCourseDetail(id) {
-  return request.get(`/course/detail/${id}`)
-}
-
-/**
- * 获取热门课程
- */
-export function getHotCourses() {
-  return request.get('/course/hot')
-}
-
-/**
- * 获取推荐课程
- */
-export function getRecommendCourses() {
-  return request.get('/course/recommend')
+  return request.get(`/courses/${id}`)
 }
 
 /**
@@ -38,7 +24,7 @@ export function getRecommendCourses() {
  * @param {Object} params
  */
 export function getCourseResources(courseId, params) {
-  return request.get(`/course/${courseId}/resources`, { params })
+  return request.get('/resources', { params: { courseId, ...params } })
 }
 
 /**
@@ -46,29 +32,38 @@ export function getCourseResources(courseId, params) {
  * @param {number} courseId
  */
 export function getCourseKnowledgePoints(courseId) {
-  return request.get(`/course/${courseId}/knowledge-points`)
+  return request.get('/qa/knowledge', { params: { courseId } })
 }
 
 /**
- * 获取学习进度
- * @param {number} courseId
- */
-export function getLearningProgress(courseId) {
-  return request.get(`/course/${courseId}/progress`)
-}
-
-/**
- * 更新学习进度
- * @param {number} courseId
- * @param {Object} data
- */
-export function updateLearningProgress(courseId, data) {
-  return request.post(`/course/${courseId}/progress`, data)
-}
-
-/**
- * 获取我的课程
+ * 获取我的课程（复用课程列表接口）
  */
 export function getMyCourses() {
-  return request.get('/course/my')
+  return request.get('/courses', { params: { page: 1, size: 100 } })
+}
+
+/**
+ * 上传资源
+ * @param {Object} data FormData with courseId, title, description, file
+ */
+export function uploadResource(data) {
+  return request.post('/resources', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+/**
+ * 获取资源详情
+ * @param {number} resourceId
+ */
+export function getResourceDetail(resourceId) {
+  return request.get(`/resources/${resourceId}`)
+}
+
+/**
+ * 下载资源
+ * @param {number} resourceId
+ */
+export function downloadResource(resourceId) {
+  return request.get(`/resources/${resourceId}/download`)
 }

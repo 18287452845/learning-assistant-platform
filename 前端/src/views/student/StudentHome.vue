@@ -154,7 +154,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { mockCourses, mockAnnouncements, mockWrongQuestions } from '@/mock/data'
+import { getCourseList } from '@/api/course'
+import { getQAHistory } from '@/api/qa'
 import * as echarts from 'echarts'
 
 const userStore = useUserStore()
@@ -170,9 +171,9 @@ const timeGreeting = computed(() => {
 })
 
 const statsData = reactive({
-  learningDays: 45,
-  questionsCount: 28,
-  knowledgePoints: 156
+  learningDays: 0,
+  questionsCount: 0,
+  knowledgePoints: 0
 })
 
 const gradients = [
@@ -182,14 +183,10 @@ const gradients = [
   'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
 ]
 
-const recentCourses = ref(mockCourses.slice(0, 3).map((c, i) => ({
-  ...c,
-  progress: [65, 78, 42][i],
-  gradient: gradients[i]
-})))
+const recentCourses = ref([])
 
-const announcements = ref(mockAnnouncements)
-const weakPoints = ref(mockWrongQuestions.slice(0, 3))
+const announcements = ref([])
+const weakPoints = ref([])
 
 const initChart = () => {
   if (!chartRef.value) return
@@ -249,7 +246,33 @@ const handleResize = () => {
   chart?.resize()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Fetch course list for course cards
+  try {
+    const res = await getCourseList({ page: 1, size: 3 })
+    const records = res?.records || res?.list || (Array.isArray(res) ? res : [])
+    recentCourses.value = records.map((c, i) => ({
+      id: c.id,
+      name: c.courseName || c.name || '',
+      teacher: c.teacherName || c.teacher || '',
+      students: c.studentCount || c.students || 0,
+      resourceCount: c.resourceCount || 0,
+      progress: 0,
+      gradient: gradients[i % gradients.length]
+    }))
+  } catch (e) {
+    console.error('获取课程列表失败:', e)
+  }
+
+  // Fetch Q&A history for stats
+  try {
+    const res = await getQAHistory({ page: 1, size: 5 })
+    const records = res?.records || res?.list || (Array.isArray(res) ? res : [])
+    statsData.questionsCount = res?.total || records.length
+  } catch (e) {
+    console.error('获取问答历史失败:', e)
+  }
+
   initChart()
   window.addEventListener('resize', handleResize)
 })

@@ -91,7 +91,7 @@ public class QAService {
     public PageResult<QuestionRecordVO> getQuestionHistory(Long userId, Long courseId, 
                                                             Integer page, Integer size) {
         Page<QuestionRecord> pageInfo = new Page<>(page, size);
-        Page<QuestionRecord> result = questionRecordMapper.selectQuestionPage(
+        var result = questionRecordMapper.selectQuestionPage(
             pageInfo, userId, courseId);
         
         List<QuestionRecordVO> records = result.getRecords().stream()

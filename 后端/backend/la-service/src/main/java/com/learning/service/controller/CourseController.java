@@ -4,6 +4,7 @@ import com.learning.common.result.PageResult;
 import com.learning.common.result.Result;
 import com.learning.domain.vo.CourseVO;
 import com.learning.domain.vo.ResourceVO;
+import com.learning.infra.security.SecurityUtils;
 import com.learning.service.CourseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class CourseController {
 
     private final CourseService courseService;
+    private final SecurityUtils securityUtils;
 
     // ==================== 课程接口 ====================
 
@@ -90,8 +92,7 @@ public class CourseController {
             @RequestParam String title,
             @RequestParam(required = false) String description,
             @RequestParam("file") MultipartFile file) {
-        // 实际应从SecurityContext获取当前用户ID
-        Long uploaderId = 1L;
+        Long uploaderId = securityUtils.getCurrentUserId();
         ResourceVO resource = courseService.uploadResource(uploaderId, courseId, title, description, file);
         return Result.success(resource);
     }
@@ -103,8 +104,7 @@ public class CourseController {
     @DeleteMapping("/resources/{resourceId}")
     @PreAuthorize("hasRole('STUDENT') or hasRole('TEACHER')")
     public Result<Void> deleteResource(@PathVariable Long resourceId) {
-        // 实际应从SecurityContext获取当前用户ID
-        Long userId = 1L;
+        Long userId = securityUtils.getCurrentUserId();
         courseService.deleteResource(resourceId, userId);
         return Result.success();
     }

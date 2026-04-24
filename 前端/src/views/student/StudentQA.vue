@@ -280,7 +280,7 @@
 import { ref, reactive, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { mockAIAnswers } from '@/mock/data'
+import { askGeneralQuestion, askPersonalQuestion } from '@/api/qa'
 
 const userStore = useUserStore()
 
@@ -366,16 +366,23 @@ const sendGeneralMessage = async () => {
   scrollToBottom(generalChatContainer.value)
   
   generalLoading.value = true
-  
-  // 模拟AI响应
-  await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000))
-  
-  const lastMsg = generalMessages[generalMessages.length - 1]
-  lastMsg.isLoading = false
-  lastMsg.content = mockAIAnswers.general.answer
-  lastMsg.sources = mockAIAnswers.general.sources
-  lastMsg.confidence = mockAIAnswers.general.confidence
-  
+
+  try {
+    const res = await askGeneralQuestion({ question: question })
+    const lastMsg = generalMessages[generalMessages.length - 1]
+    lastMsg.isLoading = false
+    lastMsg.content = res.globalAnswer || ''
+    lastMsg.sources = res.weakPoints ? JSON.parse(res.weakPoints) : []
+    lastMsg.confidence = null
+
+    // Store record id for potential rating
+    lastMsg.recordId = res.id
+  } catch (error) {
+    const lastMsg = generalMessages[generalMessages.length - 1]
+    lastMsg.isLoading = false
+    lastMsg.content = '抱歉，获取答案失败，请稍后重试。'
+  }
+
   generalLoading.value = false
   scrollToBottom(generalChatContainer.value)
 }
@@ -406,17 +413,24 @@ const sendPersonalMessage = async () => {
   scrollToBottom(personalChatContainer.value)
   
   personalLoading.value = true
-  
-  // 模拟AI个性化响应
-  await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000))
-  
-  const lastMsg = personalMessages[personalMessages.length - 1]
-  lastMsg.isLoading = false
-  lastMsg.content = mockAIAnswers.personalized.answer
-  lastMsg.sources = mockAIAnswers.personalized.sources
-  lastMsg.weakPoints = mockAIAnswers.personalized.weakPoints
-  lastMsg.recommendations = mockAIAnswers.personalized.recommendations
-  
+
+  try {
+    const res = await askPersonalQuestion({ question: question })
+    const lastMsg = personalMessages[personalMessages.length - 1]
+    lastMsg.isLoading = false
+    lastMsg.content = res.personalAnswer || ''
+    lastMsg.sources = res.weakPoints ? JSON.parse(res.weakPoints) : []
+    lastMsg.weakPoints = res.weakPoints ? JSON.parse(res.weakPoints) : []
+    lastMsg.recommendations = res.recommendations ? JSON.parse(res.recommendations) : []
+
+    // Store record id for potential rating
+    lastMsg.recordId = res.id
+  } catch (error) {
+    const lastMsg = personalMessages[personalMessages.length - 1]
+    lastMsg.isLoading = false
+    lastMsg.content = '抱歉，获取个性化答案失败，请稍后重试。'
+  }
+
   personalLoading.value = false
   scrollToBottom(personalChatContainer.value)
 }

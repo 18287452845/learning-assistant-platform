@@ -1,5 +1,7 @@
 package com.learning.common.constant;
 
+import java.util.List;
+
 /**
  * 全局常量类
  */

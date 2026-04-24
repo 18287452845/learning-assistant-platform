@@ -1,4 +1,4 @@
-import request from './index'
+import request from '@/utils/request'
 
 // 用户相关API
 
@@ -19,10 +19,10 @@ export function updateUserInfo(data) {
 
 /**
  * 修改密码
- * @param {Object} data { oldPassword, newPassword }
+ * @param {Object} data { oldPassword, newPassword, confirmPassword }
  */
 export function changePassword(data) {
-  return request.post('/user/change-password', data)
+  return request.put('/user/password', data)
 }
 
 /**
@@ -40,14 +40,14 @@ export function uploadAvatar(formData) {
  * @param {string} imageData 人脸图片base64数据
  */
 export function bindFace(imageData) {
-  return request.post('/user/bind-face', { image: imageData })
+  return request.post('/auth/bind-face', { image: imageData })
 }
 
 /**
  * 解绑人脸
  */
 export function unbindFace() {
-  return request.delete('/user/unbind-face')
+  return request.post('/auth/unbind-face')
 }
 
 /**
@@ -64,12 +64,4 @@ export function getLearningRecords(params) {
  */
 export function getWrongQuestions(params) {
   return request.get('/user/wrong-questions', { params })
-}
-
-/**
- * 获取问答历史
- * @param {Object} params
- */
-export function getQAHistory(params) {
-  return request.get('/user/qa-history', { params })
 }

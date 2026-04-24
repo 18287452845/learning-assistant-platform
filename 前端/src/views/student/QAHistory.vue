@@ -25,7 +25,7 @@
         </el-select>
       </div>
       
-      <el-table :data="filteredHistory" stripe @selection-change="handleSelectionChange">
+      <el-table :data="filteredHistory" stripe v-loading="tableLoading" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
         <el-table-column label="问题" prop="question" min-width="300">
           <template #default="{ row }">
@@ -87,24 +87,72 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { mockQAHistory } from '@/mock/data'
+import { getQAHistory } from '@/api/qa'
 
 const searchKeyword = ref('')
 const typeFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(mockQAHistory.length)
+const total = ref(0)
 const selectedRows = ref([])
 const showDetail = ref(false)
 const currentRecord = ref(null)
+const tableLoading = ref(false)
+const historyList = ref([])
 
-const historyList = reactive([...mockQAHistory])
+// Format createTime from ISO/local datetime string to display string
+const formatTime = (dateTime) => {
+  if (!dateTime) return ''
+  if (Array.isArray(dateTime)) {
+    // LocalDateTime serialized as [2024, 3, 15, 14, 30, 0]
+    const [y, m, d, h = 0, min = 0, s = 0] = dateTime
+    return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')} ${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+  return String(dateTime).replace('T', ' ').substring(0, 19)
+}
+
+// Map QuestionRecordVO to table row format
+const mapRecord = (record) => ({
+  id: record.id,
+  question: record.question || '',
+  answer: record.globalAnswer || record.personalAnswer || '',
+  time: formatTime(record.createTime),
+  type: record.answerType === 1 ? 'general' : 'personal',
+  globalAnswer: record.globalAnswer || '',
+  personalAnswer: record.personalAnswer || '',
+  weakPoints: record.weakPoints,
+  recommendations: record.recommendations,
+  helpful: record.helpful
+})
+
+// Fetch history from server
+const fetchHistory = async () => {
+  tableLoading.value = true
+  try {
+    const res = await getQAHistory({ page: currentPage.value, size: pageSize.value })
+    total.value = res.total || 0
+    historyList.value = (res.records || []).map(mapRecord)
+  } catch (error) {
+    ElMessage.error('获取问答历史失败')
+  } finally {
+    tableLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchHistory()
+})
+
+// Re-fetch when page or size changes
+watch([currentPage, pageSize], () => {
+  fetchHistory()
+})
 
 const filteredHistory = computed(() => {
-  return historyList.filter(item => {
-    const matchKeyword = !searchKeyword.value || 
+  return historyList.value.filter(item => {
+    const matchKeyword = !searchKeyword.value ||
       item.question.toLowerCase().includes(searchKeyword.value.toLowerCase())
     const matchType = !typeFilter.value || item.type === typeFilter.value
     return matchKeyword && matchType
@@ -127,10 +175,11 @@ const handleDelete = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
-    // 模拟删除
-    historyList.splice(0, selectedRows.value.length)
-    total.value = historyList.length
+
+    // Remove selected items from local list
+    const idsToDelete = new Set(selectedRows.value.map(r => r.id))
+    historyList.value = historyList.value.filter(item => !idsToDelete.has(item.id))
+    total.value = Math.max(0, total.value - idsToDelete.size)
     ElMessage.success('删除成功')
   } catch {
     // 取消删除
@@ -144,13 +193,10 @@ const handleDeleteOne = async (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
-    const index = historyList.findIndex(item => item.id === row.id)
-    if (index > -1) {
-      historyList.splice(index, 1)
-      total.value = historyList.length
-      ElMessage.success('删除成功')
-    }
+
+    historyList.value = historyList.value.filter(item => item.id !== row.id)
+    total.value = Math.max(0, total.value - 1)
+    ElMessage.success('删除成功')
   } catch {
     // 取消删除
   }

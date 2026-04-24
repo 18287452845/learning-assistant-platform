@@ -1,13 +1,13 @@
-import request from './index'
+import request from '@/utils/request'
 
-// 管理员相关API
+// 管理员相关API - 路径对齐后端Controller
 
 /**
  * 获取用户列表
- * @param {Object} params
+ * @param {Object} params { keyword, status, page, size }
  */
 export function getUserList(params) {
-  return request.get('/admin/users', { params })
+  return request.get('/user/list', { params })
 }
 
 /**
@@ -15,41 +15,16 @@ export function getUserList(params) {
  * @param {number} id
  */
 export function getUserDetail(id) {
-  return request.get(`/admin/users/${id}`)
-}
-
-/**
- * 创建用户
- * @param {Object} data
- */
-export function createUser(data) {
-  return request.post('/admin/users', data)
-}
-
-/**
- * 更新用户
- * @param {number} id
- * @param {Object} data
- */
-export function updateUser(id, data) {
-  return request.put(`/admin/users/${id}`, data)
-}
-
-/**
- * 删除用户
- * @param {number} id
- */
-export function deleteUser(id) {
-  return request.delete(`/admin/users/${id}`)
+  return request.get(`/user/${id}`)
 }
 
 /**
  * 启用/禁用用户
  * @param {number} id
- * @param {boolean} enabled
+ * @param {number} status 0=禁用 1=启用
  */
-export function toggleUserStatus(id, enabled) {
-  return request.post(`/admin/users/${id}/toggle-status`, { enabled })
+export function toggleUserStatus(id, status) {
+  return request.put(`/user/${id}/status`, null, { params: { status } })
 }
 
 /**
@@ -57,44 +32,46 @@ export function toggleUserStatus(id, enabled) {
  * @param {number} id
  */
 export function resetUserPassword(id) {
-  return request.post(`/admin/users/${id}/reset-password`)
+  return request.post(`/user/${id}/reset-password`)
 }
 
 /**
  * 获取待审核资源列表
- * @param {Object} params
+ * @param {Object} params { page, size }
  */
 export function getPendingReviews(params) {
-  return request.get('/admin/reviews/pending', { params })
+  return request.get('/admin/resources/pending', { params })
 }
 
 /**
  * 审核资源
  * @param {number} id
- * @param {boolean} approved
- * @param {string} reason
+ * @param {number} status 1=通过 2=驳回
+ * @param {string} rejectReason 驳回原因
  */
-export function reviewResource(id, approved, reason) {
-  return request.post(`/admin/reviews/${id}`, { approved, reason })
+export function reviewResource(id, status, rejectReason) {
+  return request.put(`/admin/resources/${id}/approve`, null, {
+    params: { status, rejectReason }
+  })
 }
 
 /**
  * 获取系统统计
  */
 export function getSystemStats() {
-  return request.get('/admin/stats')
+  return request.get('/admin/statistics')
 }
 
 /**
- * 获取在线用户统计
+ * 获取用户活跃度统计
  */
-export function getOnlineUserStats() {
-  return request.get('/admin/stats/online')
+export function getUserActivityStats() {
+  return request.get('/admin/statistics/user-activity')
 }
 
 /**
  * 获取操作日志
- * @param {Object} params
+ * @param {Object} params { keyword, page, size }
  */
 export function getOperationLogs(params) {
   return request.get('/admin/logs/operation', { params })
@@ -102,7 +79,7 @@ export function getOperationLogs(params) {
 
 /**
  * 获取登录日志
- * @param {Object} params
+ * @param {Object} params { keyword, page, size }
  */
 export function getLoginLogs(params) {
   return request.get('/admin/logs/login', { params })
@@ -112,46 +89,20 @@ export function getLoginLogs(params) {
  * 获取系统状态
  */
 export function getSystemStatus() {
-  return request.get('/admin/system/status')
+  return request.get('/admin/health')
 }
 
 /**
- * 获取课程列表（管理员）
+ * 获取课程列表
  * @param {Object} params
  */
 export function getAdminCourseList(params) {
-  return request.get('/admin/courses', { params })
+  return request.get('/courses', { params })
 }
 
 /**
- * 创建课程
- * @param {Object} data
+ * 获取问答统计
  */
-export function createCourse(data) {
-  return request.post('/admin/courses', data)
-}
-
-/**
- * 更新课程
- * @param {number} id
- * @param {Object} data
- */
-export function updateCourse(id, data) {
-  return request.put(`/admin/courses/${id}`, data)
-}
-
-/**
- * 删除课程
- * @param {number} id
- */
-export function deleteCourse(id) {
-  return request.delete(`/admin/courses/${id}`)
-}
-
-/**
- * 获取问答统计（管理员）
- * @param {Object} params
- */
-export function getAdminQAStats(params) {
-  return request.get('/admin/stats/qa', { params })
+export function getAdminQAStats() {
+  return request.get('/admin/statistics/questions')
 }

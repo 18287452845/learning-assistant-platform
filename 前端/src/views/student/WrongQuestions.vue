@@ -66,43 +66,46 @@
       </div>
       
       <!-- 错题列表 -->
-      <el-table :data="wrongQuestions" stripe>
-        <el-table-column prop="subject" label="科目" width="150" />
-        <el-table-column prop="question" label="错题内容" min-width="300" />
-        <el-table-column prop="correctAnswer" label="正确答案" width="200" />
-        <el-table-column prop="errorCount" label="错误次数" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag type="danger">{{ row.errorCount }} 次</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="correctRate" label="正确率" width="150" align="center">
-          <template #default="{ row }">
-            <el-progress 
-              :percentage="Math.round(row.correctRate * 100)" 
-              :color="getProgressColor(row.correctRate)"
-              :stroke-width="10"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column prop="lastTime" label="最近错误" width="120" />
-        <el-table-column label="操作" width="180" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="viewDetail(row)">查看</el-button>
-            <el-button type="success" link size="small" @click="markAsMastered(row)">已掌握</el-button>
-            <el-button type="danger" link size="small" @click="deleteQuestion(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      
-      <div class="pagination">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next, jumper"
-        />
-      </div>
+      <el-empty v-if="wrongQuestions.length === 0" description="暂无错题记录" />
+      <template v-else>
+        <el-table :data="wrongQuestions" stripe>
+          <el-table-column prop="subject" label="科目" width="150" />
+          <el-table-column prop="question" label="错题内容" min-width="300" />
+          <el-table-column prop="correctAnswer" label="正确答案" width="200" />
+          <el-table-column prop="errorCount" label="错误次数" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag type="danger">{{ row.errorCount }} 次</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="correctRate" label="正确率" width="150" align="center">
+            <template #default="{ row }">
+              <el-progress
+                :percentage="Math.round(row.correctRate * 100)"
+                :color="getProgressColor(row.correctRate)"
+                :stroke-width="10"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column prop="lastTime" label="最近错误" width="120" />
+          <el-table-column label="操作" width="180" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" link size="small" @click="viewDetail(row)">查看</el-button>
+              <el-button type="success" link size="small" @click="markAsMastered(row)">已掌握</el-button>
+              <el-button type="danger" link size="small" @click="deleteQuestion(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="pagination">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total="total"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next, jumper"
+          />
+        </div>
+      </template>
     </el-card>
     
     <!-- 错题详情弹窗 -->
@@ -133,22 +136,14 @@
 <script setup>
 import { ref, computed, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { mockWrongQuestions } from '@/mock/data'
 
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(mockWrongQuestions.length)
+const total = ref(0)
 const showDetail = ref(false)
 const currentQuestion = ref(null)
 
-const wrongQuestions = reactive([
-  ...mockWrongQuestions.map(item => ({
-    ...item,
-    correctAnswer: '详见答案解析',
-    errorReason: '对概念理解不够深入',
-    improvement: '加强相关知识点的学习'
-  }))
-])
+const wrongQuestions = reactive([])
 
 const repeatedCount = computed(() => {
   return wrongQuestions.filter(item => item.errorCount >= 3).length
@@ -182,7 +177,7 @@ const markAsMastered = async (row) => {
       cancelButtonText: '取消',
       type: 'success'
     })
-    
+
     const index = wrongQuestions.findIndex(item => item.id === row.id)
     if (index > -1) {
       wrongQuestions.splice(index, 1)
@@ -201,7 +196,7 @@ const deleteQuestion = async (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     const index = wrongQuestions.findIndex(item => item.id === row.id)
     if (index > -1) {
       wrongQuestions.splice(index, 1)
@@ -214,15 +209,15 @@ const deleteQuestion = async (row) => {
 }
 
 const addWrongQuestion = () => {
-  ElMessage.info('添加错题功能开发中...')
+  ElMessage.info('请在问答页面标记错题')
 }
 
 const exportWrongQuestions = () => {
-  ElMessage.info('导出功能开发中...')
+  ElMessage.info('导出功能即将开放')
 }
 
 const practiceQuestion = () => {
-  ElMessage.info('专项练习功能开发中...')
+  ElMessage.info('练习功能即将开放')
 }
 </script>
 

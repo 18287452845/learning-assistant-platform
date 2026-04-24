@@ -62,7 +62,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { mockStatistics, mockStudentList } from '@/mock/data'
+import { getQARequestStatistics } from '@/api/qa'
 import * as echarts from 'echarts'
 
 const highFreqChartRef = ref(null)
@@ -72,24 +72,28 @@ let highFreqChart = null
 let typeChart = null
 let knowledgeChart = null
 
-const activeStudents = mockStudentList.slice(0, 5)
+const activeStudents = ref([])
+
+// Store stats data from API
+let statsDataFromAPI = null
 
 const initCharts = () => {
   // 高频问题柱状图
   if (highFreqChartRef.value) {
     highFreqChart = echarts.init(highFreqChartRef.value)
+    const highFreqData = statsDataFromAPI?.highFrequencyQuestions || []
     highFreqChart.setOption({
       tooltip: { trigger: 'axis' },
       grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
       xAxis: {
         type: 'category',
-        data: mockStatistics.highFrequencyQuestions.map(q => q.keyword),
+        data: highFreqData.map(q => q.keyword),
         axisLabel: { rotate: 30 }
       },
       yAxis: { type: 'value' },
       series: [{
         type: 'bar',
-        data: mockStatistics.highFrequencyQuestions.map(q => q.count),
+        data: highFreqData.map(q => q.count),
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: '#667eea' },
@@ -100,7 +104,7 @@ const initCharts = () => {
       }]
     })
   }
-  
+
   // 问题类型饼图
   if (typeChartRef.value) {
     typeChart = echarts.init(typeChartRef.value)
@@ -114,11 +118,11 @@ const initCharts = () => {
         itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
         emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
-        data: mockStatistics.questionTypes
+        data: statsDataFromAPI?.questionTypes || []
       }]
     })
   }
-  
+
   // 知识点雷达图
   if (knowledgeChartRef.value) {
     knowledgeChart = echarts.init(knowledgeChartRef.value)
@@ -137,7 +141,7 @@ const initCharts = () => {
       series: [{
         type: 'radar',
         data: [{
-          value: [85, 72, 68, 45, 78, 52],
+          value: statsDataFromAPI?.knowledgeMastery || [0, 0, 0, 0, 0, 0],
           name: '掌握度',
           areaStyle: { color: 'rgba(103, 194, 58, 0.3)' },
           lineStyle: { color: '#67C23A' },
@@ -148,16 +152,38 @@ const initCharts = () => {
   }
 }
 
-onMounted(() => {
+const handleResize = () => {
+  highFreqChart?.resize()
+  typeChart?.resize()
+  knowledgeChart?.resize()
+}
+
+onMounted(async () => {
+  try {
+    const res = await getQARequestStatistics()
+    if (res.data) {
+      statsDataFromAPI = res.data
+
+      if (res.data.activeStudents) {
+        activeStudents.value = res.data.activeStudents.slice(0, 5).map(s => ({
+          id: s.id,
+          name: s.name || s.realName || '-',
+          class: s.className || '-',
+          questions: s.questionCount || 0,
+          answers: s.answerCount || 0
+        }))
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load statistics:', e)
+  }
+
   initCharts()
-  window.addEventListener('resize', () => {
-    highFreqChart?.resize()
-    typeChart?.resize()
-    knowledgeChart?.resize()
-  })
+  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
   highFreqChart?.dispose()
   typeChart?.dispose()
   knowledgeChart?.dispose()

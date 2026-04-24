@@ -3,32 +3,17 @@
     <el-row :gutter="20">
       <!-- 左侧个人信息卡片 -->
       <el-col :span="8">
-        <el-card shadow="hover" class="profile-card">
+        <el-card shadow="hover" class="profile-card" v-loading="profileLoading">
           <div class="profile-header">
             <el-avatar :size="80" :style="{ background: '#409EFF' }">
-              {{ userStore.userInfo.name?.charAt(0) }}
+              {{ (userStore.userInfo.realName || userStore.userInfo.username || '').charAt(0) }}
             </el-avatar>
-            <h3>{{ userStore.userInfo.name }}</h3>
+            <h3>{{ userStore.userInfo.realName || userStore.userInfo.username }}</h3>
             <el-tag :type="getRoleType()">{{ getRoleLabel() }}</el-tag>
           </div>
-          
-          <div class="profile-stats">
-            <div class="stat-item">
-              <span class="value">{{ stats.questions }}</span>
-              <span class="label">提问数</span>
-            </div>
-            <div class="stat-item">
-              <span class="value">{{ stats.answers }}</span>
-              <span class="label">回答数</span>
-            </div>
-            <div class="stat-item">
-              <span class="value">{{ stats.courses }}</span>
-              <span class="label">学习课程</span>
-            </div>
-          </div>
-          
+
           <el-divider />
-          
+
           <div class="profile-info">
             <div class="info-item">
               <el-icon><User /></el-icon>
@@ -42,9 +27,9 @@
               <el-icon><Message /></el-icon>
               <span>{{ userStore.userInfo.email || '未设置' }}</span>
             </div>
-            <div class="info-item" v-if="userStore.userInfo.class">
-              <el-icon><School /></el-icon>
-              <span>{{ userStore.userInfo.class }}</span>
+            <div class="info-item" v-if="userStore.userInfo.genderDesc">
+              <el-icon><User /></el-icon>
+              <span>{{ userStore.userInfo.genderDesc }}</span>
             </div>
           </div>
         </el-card>
@@ -57,12 +42,13 @@
           <div class="face-content">
             <div class="face-status" :class="{ bound: isFaceBound }">
               <el-icon :size="48">
-                {{ isFaceBound ? '<CircleCheck />' : '<Picture />' }}
+                <CircleCheck v-if="isFaceBound" />
+                <Picture v-else />
               </el-icon>
               <p>{{ isFaceBound ? '已绑定人脸' : '未绑定人脸' }}</p>
             </div>
-            <el-button type="primary" @click="handleBindFace">
-              {{ isFaceBound ? '更换人脸' : '立即绑定' }}
+            <el-button :type="isFaceBound ? 'danger' : 'primary'" @click="handleBindFace">
+              {{ isFaceBound ? '解除绑定' : '立即绑定' }}
             </el-button>
           </div>
         </el-card>
@@ -97,15 +83,6 @@
             
             <el-form-item label="邮箱" prop="email">
               <el-input v-model="profileForm.email" />
-            </el-form-item>
-            
-            <el-form-item label="个人简介">
-              <el-input
-                v-model="profileForm.bio"
-                type="textarea"
-                :rows="4"
-                placeholder="介绍一下自己..."
-              />
             </el-form-item>
           </el-form>
         </el-card>
@@ -145,27 +122,23 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { getUserInfo, updateUserInfo, changePassword as changePasswordApi, uploadAvatar, bindFace, unbindFace } from '@/api/user'
 
 const userStore = useUserStore()
 const formRef = ref(null)
 const pwdFormRef = ref(null)
 const saving = ref(false)
+const changingPwd = ref(false)
 const isFaceBound = ref(false)
-
-const stats = reactive({
-  questions: 28,
-  answers: 45,
-  courses: 5
-})
+const profileLoading = ref(false)
 
 const profileForm = reactive({
   realName: '',
   phone: '',
-  email: '',
-  bio: ''
+  email: ''
 })
 
 const passwordForm = reactive({
@@ -218,26 +191,45 @@ const getRoleLabel = () => {
   return labels[userStore.role] || '用户'
 }
 
-const initProfile = () => {
-  const info = userStore.userInfo
-  profileForm.realName = info.name || ''
-  profileForm.phone = info.phone || ''
-  profileForm.email = info.email || ''
-  profileForm.bio = ''
+const initProfile = (user) => {
+  profileForm.realName = user.realName || ''
+  profileForm.phone = user.phone || ''
+  profileForm.email = user.email || ''
+  isFaceBound.value = !!user.faceRegistered
+}
+
+const fetchUserInfo = async () => {
+  profileLoading.value = true
+  try {
+    const user = await getUserInfo()
+    // Update store with fresh data
+    userStore.setUserInfo(user)
+    initProfile(user)
+  } catch (error) {
+    ElMessage.error('获取用户信息失败')
+  } finally {
+    profileLoading.value = false
+  }
 }
 
 const saveProfile = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     saving.value = true
     try {
-      // 模拟保存
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      userStore.setUserInfo({ ...userStore.userInfo, ...profileForm })
+      await updateUserInfo({
+        realName: profileForm.realName,
+        phone: profileForm.phone,
+        email: profileForm.email
+      })
+      // Refresh user info from server
+      await fetchUserInfo()
       ElMessage.success('保存成功')
+    } catch (error) {
+      ElMessage.error(error.message || '保存失败')
     } finally {
       saving.value = false
     }
@@ -246,28 +238,81 @@ const saveProfile = async () => {
 
 const changePassword = async () => {
   if (!pwdFormRef.value) return
-  
+
   await pwdFormRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
+    changingPwd.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await changePasswordApi({
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword,
+        confirmPassword: passwordForm.confirmPassword
+      })
       ElMessage.success('密码修改成功')
       passwordForm.oldPassword = ''
       passwordForm.newPassword = ''
       passwordForm.confirmPassword = ''
-    } catch {
-      ElMessage.error('密码修改失败')
+    } catch (error) {
+      ElMessage.error(error.message || '密码修改失败')
+    } finally {
+      changingPwd.value = false
     }
   })
 }
 
-const handleBindFace = () => {
-  ElMessage.info('人脸绑定功能开发中...')
+const handleBindFace = async () => {
+  if (isFaceBound.value) {
+    // Already bound - confirm then unbind
+    try {
+      await ElMessageBox.confirm(
+        '确定要解除人脸绑定吗？解除后将无法使用人脸识别功能。',
+        '解除人脸绑定',
+        { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+      )
+      await unbindFace()
+      isFaceBound.value = false
+      ElMessage.success('人脸绑定已解除')
+    } catch (error) {
+      if (error !== 'cancel') {
+        ElMessage.error(error.message || '解绑失败')
+      }
+    }
+  } else {
+    // Not bound - confirm then bind with mock image data
+    try {
+      await ElMessageBox.confirm(
+        '确定要绑定人脸吗？系统将使用模拟数据完成绑定。',
+        '人脸绑定',
+        { confirmButtonText: '确定', cancelButtonText: '取消', type: 'info' }
+      )
+      // Mock image data since we don't have a real camera
+      const mockImageData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+      await bindFace(mockImageData)
+      isFaceBound.value = true
+      ElMessage.success('人脸绑定成功')
+    } catch (error) {
+      if (error !== 'cancel') {
+        ElMessage.error(error.message || '绑定失败')
+      }
+    }
+  }
+}
+
+const handleAvatarUpload = async (uploadFile) => {
+  const formData = new FormData()
+  formData.append('file', uploadFile.raw)
+  try {
+    await uploadAvatar(formData)
+    await fetchUserInfo()
+    ElMessage.success('头像上传成功')
+  } catch (error) {
+    ElMessage.error(error.message || '头像上传失败')
+  }
 }
 
 onMounted(() => {
-  initProfile()
+  fetchUserInfo()
 })
 </script>
 
@@ -283,29 +328,7 @@ onMounted(() => {
         font-size: 20px;
       }
     }
-    
-    .profile-stats {
-      display: flex;
-      justify-content: space-around;
-      padding: 20px 0;
-      
-      .stat-item {
-        text-align: center;
-        
-        .value {
-          display: block;
-          font-size: 24px;
-          font-weight: 600;
-          color: #409EFF;
-        }
-        
-        .label {
-          font-size: 12px;
-          color: #909399;
-        }
-      }
-    }
-    
+
     .profile-info {
       .info-item {
         display: flex;

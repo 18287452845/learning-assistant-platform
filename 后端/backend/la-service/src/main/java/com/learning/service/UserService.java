@@ -33,6 +33,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
     private final PasswordEncoder passwordEncoder;
+    private final FileService fileService;
 
     /**
      * 获取当前用户信息
@@ -126,7 +127,7 @@ public class UserService {
     }
 
     /**
-     * 上传头像（Mock实现）
+     * 上传头像
      */
     @Transactional(rollbackFor = Exception.class)
     public String uploadAvatar(String username, MultipartFile file) {
@@ -135,13 +136,12 @@ public class UserService {
             throw BusinessException.notFound("用户不存在");
         }
 
-        // Mock实现：本地存储
-        // 实际项目中需要上传到OSS
-        String originalFilename = file.getOriginalFilename();
-        String extension = originalFilename != null ? 
-            originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
-        String avatarUrl = "/uploads/avatar/" + username + extension;
+        // 删除旧头像
+        if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+            fileService.deleteFile(user.getAvatar());
+        }
 
+        String avatarUrl = fileService.uploadAvatar(file);
         user.setAvatar(avatarUrl);
         userMapper.updateById(user);
 

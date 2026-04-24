@@ -156,6 +156,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -176,9 +177,9 @@ const roleOptions = [
 ]
 
 const demoAccounts = [
-  { role: 'student', label: '学生', username: 'student01' },
-  { role: 'teacher', label: '教师', username: 'teacher01' },
-  { role: 'admin', label: '管理员', username: 'admin01' }
+  { role: 'student', label: '学生', username: '202011604100' },
+  { role: 'teacher', label: '教师', username: '2020001' },
+  { role: 'admin', label: '管理员', username: 'admin' }
 ]
 
 const rules = {
@@ -186,28 +187,36 @@ const rules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
+const userStore = useUserStore()
+
 const handleLogin = async () => {
   if (!formRef.value) return
-  
+
   try {
     await formRef.value.validate()
     loading.value = true
-    
-    // 模拟登录
-    setTimeout(() => {
+
+    const { success, role, message } = await userStore.login(
+      loginForm.username,
+      loginForm.password
+    )
+
+    if (success) {
       ElMessage.success('登录成功')
-      loading.value = false
-      
-      // 根据角色跳转到对应首页
+      const actualRole = role || loginForm.role
       const roleRoutes = {
         student: '/student/home',
         teacher: '/teacher/home',
         admin: '/admin/home'
       }
-      router.push(roleRoutes[loginForm.role])
-    }, 1000)
+      router.push(roleRoutes[actualRole] || roleRoutes.student)
+    } else {
+      ElMessage.error(message || '登录失败，请检查用户名和密码')
+    }
   } catch (e) {
-    console.log('验证失败')
+    // form validation error
+  } finally {
+    loading.value = false
   }
 }
 </script>

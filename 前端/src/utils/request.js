@@ -41,12 +41,17 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   response => {
     const res = response.data
-    
-    // 根据业务状态码判断
-    if (res.code === 200 || res.code === undefined) {
+
+    // 非标准响应（没有code字段）直接返回
+    if (res.code === undefined) {
       return res
     }
-    
+
+    // 成功：解包 Result<T>，返回 data 字段
+    if (res.code === 200) {
+      return res.data
+    }
+
     // Token过期
     if (res.code === 401) {
       ElNotification.error({
@@ -57,7 +62,7 @@ service.interceptors.response.use(
       router.push('/login')
       return Promise.reject(new Error('登录已过期'))
     }
-    
+
     // 其他错误
     ElMessage.error(res.message || '请求失败')
     return Promise.reject(new Error(res.message || '请求失败'))

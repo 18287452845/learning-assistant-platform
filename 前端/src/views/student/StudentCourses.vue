@@ -23,44 +23,50 @@
       </div>
     </div>
 
+    <!-- 加载状态 -->
+    <div v-if="loading" style="text-align: center; padding: 60px 0;">
+      <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+      <p style="color: #909399; margin-top: 12px;">加载课程中...</p>
+    </div>
+
     <!-- 课程列表 -->
-    <div class="course-grid">
-      <el-card 
-        v-for="course in filteredCourses" 
-        :key="course.id" 
+    <div v-else class="course-grid">
+      <el-card
+        v-for="course in filteredCourses"
+        :key="course.id"
         class="course-card"
         shadow="hover"
         @click="$router.push(`/student/course/${course.id}`)"
       >
         <div class="course-cover" :style="{ background: getCourseColor(course.id) }">
-          <span class="course-letter">{{ course.name.charAt(0) }}</span>
+          <span class="course-letter">{{ (course.courseName || '').charAt(0) }}</span>
         </div>
-        
+
         <div class="course-info">
-          <h3 class="course-name">{{ course.name }}</h3>
+          <h3 class="course-name">{{ course.courseName }}</h3>
           <p class="course-teacher">
-            <el-icon><User /></el-icon> {{ course.teacher }}
+            <el-icon><User /></el-icon> {{ course.teacherName }}
           </p>
           <div class="course-meta">
-            <span><el-icon><UserFilled /></el-icon> {{ course.students }} 人学习</span>
-            <span><el-icon><Document /></el-icon> {{ course.resourceCount }} 资源</span>
+            <span><el-icon><UserFilled /></el-icon> {{ course.studentCount || 0 }} 人学习</span>
+            <span><el-icon><Document /></el-icon> {{ course.resourceCount || 0 }} 资源</span>
           </div>
-          
+
           <div class="course-progress">
             <div class="progress-header">
               <span>学习进度</span>
-              <span class="progress-value">{{ getRandomProgress() }}%</span>
+              <span class="progress-value">0%</span>
             </div>
-            <el-progress 
-              :percentage="getRandomProgress()" 
-              :stroke-width="8" 
+            <el-progress
+              :percentage="0"
+              :stroke-width="8"
               :show-text="false"
               color="#67C23A"
             />
           </div>
-          
+
           <div class="course-tags">
-            <el-tag size="small" type="info">{{ course.category }}</el-tag>
+            <el-tag size="small" type="info">{{ course.statusDesc || '进行中' }}</el-tag>
           </div>
         </div>
       </el-card>
@@ -75,24 +81,26 @@
     </div>
 
     <!-- 空状态 -->
-    <el-empty v-if="!filteredCourses.length && !searchKeyword" description="暂无课程" />
-    <el-empty v-if="!filteredCourses.length && searchKeyword" description="未找到相关课程" />
+    <el-empty v-if="!loading && !filteredCourses.length && !searchKeyword" description="暂无课程" />
+    <el-empty v-if="!loading && !filteredCourses.length && searchKeyword" description="未找到相关课程" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { mockCourses } from '@/mock/data'
+import { ref, computed, onMounted } from 'vue'
+import { getCourseList } from '@/api/course'
+import { Loading } from '@element-plus/icons-vue'
 
 const searchKeyword = ref('')
 const categoryFilter = ref('')
+const loading = ref(false)
+const courses = ref([])
 
 const filteredCourses = computed(() => {
-  return mockCourses.filter(course => {
-    const matchKeyword = !searchKeyword.value || 
-      course.name.toLowerCase().includes(searchKeyword.value.toLowerCase())
-    const matchCategory = !categoryFilter.value || course.category === categoryFilter.value
-    return matchKeyword && matchCategory
+  return courses.value.filter(course => {
+    const matchKeyword = !searchKeyword.value ||
+      (course.courseName || '').toLowerCase().includes(searchKeyword.value.toLowerCase())
+    return matchKeyword
   })
 })
 
@@ -111,14 +119,17 @@ const getCourseColor = (id) => {
   return courseColors[(id - 1) % courseColors.length]
 }
 
-const progressCache = {}
-const getRandomProgress = () => {
-  const id = Math.random()
-  if (!progressCache[id]) {
-    progressCache[id] = Math.floor(Math.random() * 60) + 20
+onMounted(async () => {
+  loading.value = true
+  try {
+    const res = await getCourseList({ page: 1, size: 20 })
+    courses.value = res.records || []
+  } catch (e) {
+    console.error('Failed to load courses:', e)
+  } finally {
+    loading.value = false
   }
-  return progressCache[id]
-}
+})
 </script>
 
 <style lang="scss" scoped>
@@ -128,12 +139,12 @@ const getRandomProgress = () => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    
+
     .header-left {
       display: flex;
       align-items: center;
       gap: 12px;
-      
+
       h2 {
         font-size: 20px;
         color: #303133;
@@ -154,19 +165,19 @@ const getRandomProgress = () => {
   transition: transform 0.3s, box-shadow 0.3s;
   border: none;
   overflow: hidden;
-  
+
   &:hover {
     transform: translateY(-8px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12) !important;
   }
-  
+
   .course-cover {
     height: 140px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: -20px -20px 15px -20px;
-    
+
     .course-letter {
       font-size: 48px;
       font-weight: 700;
@@ -174,14 +185,14 @@ const getRandomProgress = () => {
       text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
   }
-  
+
   .course-info {
     .course-name {
       font-size: 16px;
       color: #303133;
       margin-bottom: 8px;
     }
-    
+
     .course-teacher {
       font-size: 13px;
       color: #606266;
@@ -190,60 +201,60 @@ const getRandomProgress = () => {
       align-items: center;
       gap: 4px;
     }
-    
+
     .course-meta {
       display: flex;
       gap: 15px;
       font-size: 12px;
       color: #909399;
       margin-bottom: 12px;
-      
+
       span {
         display: flex;
         align-items: center;
         gap: 4px;
       }
     }
-    
+
     .course-progress {
       margin-bottom: 12px;
-      
+
       .progress-header {
         display: flex;
         justify-content: space-between;
         font-size: 12px;
         color: #606266;
         margin-bottom: 6px;
-        
+
         .progress-value {
           color: #67C23A;
           font-weight: 600;
         }
       }
     }
-    
+
     .course-tags {
       display: flex;
       gap: 6px;
     }
   }
-  
+
   &.add-card {
     border: 2px dashed #dcdfe6;
     background: #fafafa;
-    
+
     &:hover {
       border-color: #409EFF;
       background: #ecf5ff;
     }
-    
+
     .add-content {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 200px;
-      
+
       span {
         margin-top: 10px;
         color: #909399;

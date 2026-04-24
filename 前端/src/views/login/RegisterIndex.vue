@@ -141,6 +141,7 @@ import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { validatePassword, validatePhone, validateEmail } from '@/utils/validate'
+import { register } from '@/api/auth'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -232,14 +233,19 @@ const handleRegister = async () => {
     loading.value = true
     
     try {
-      // 模拟注册延迟
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Mock注册成功
+      await register({
+        username: registerForm.username,
+        realName: registerForm.realName,
+        phone: registerForm.phone,
+        email: registerForm.email,
+        password: registerForm.password,
+        role: registerForm.role
+      })
+
       ElMessage.success('注册成功！')
       currentStep.value = 2
     } catch (error) {
-      ElMessage.error('注册失败，请稍后重试')
+      ElMessage.error(error.message || '注册失败，请稍后重试')
     } finally {
       loading.value = false
     }

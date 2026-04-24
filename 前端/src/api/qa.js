@@ -1,4 +1,4 @@
-import request from './index'
+import request from '@/utils/request'
 
 // 问答相关API
 
@@ -7,7 +7,7 @@ import request from './index'
  * @param {Object} data { question }
  */
 export function askGeneralQuestion(data) {
-  return request.post('/qa/ask/general', data)
+  return request.post('/qa/ask', data, { params: { type: 'global' } })
 }
 
 /**
@@ -15,12 +15,12 @@ export function askGeneralQuestion(data) {
  * @param {Object} data { question }
  */
 export function askPersonalQuestion(data) {
-  return request.post('/qa/ask/personal', data)
+  return request.post('/qa/ask', data, { params: { type: 'personal' } })
 }
 
 /**
  * 获取问答历史
- * @param {Object} params
+ * @param {Object} params { courseId, page, size }
  */
 export function getQAHistory(params) {
   return request.get('/qa/history', { params })
@@ -31,62 +31,72 @@ export function getQAHistory(params) {
  * @param {number} id
  */
 export function getQADetail(id) {
-  return request.get(`/qa/detail/${id}`)
-}
-
-/**
- * 收藏问答
- * @param {number} id
- */
-export function favoriteQA(id) {
-  return request.post(`/qa/favorite/${id}`)
-}
-
-/**
- * 取消收藏
- * @param {number} id
- */
-export function unfavoriteQA(id) {
-  return request.delete(`/qa/favorite/${id}`)
-}
-
-/**
- * 获取推荐问题
- * @param {string} question
- */
-export function getRecommendedQuestions(question) {
-  return request.get('/qa/recommend', { params: { question } })
-}
-
-/**
- * 获取薄弱点分析
- * @param {Object} params
- */
-export function getWeakPointsAnalysis(params) {
-  return request.get('/qa/weak-points', { params })
-}
-
-/**
- * 获取推荐学习资源
- * @param {Object} params
- */
-export function getRecommendedResources(params) {
-  return request.get('/qa/recommended-resources', { params })
-}
-
-/**
- * 提交追问
- * @param {Object} data { parentId, question }
- */
-export function sendFollowUp(data) {
-  return request.post('/qa/follow-up', data)
+  return request.get(`/qa/${id}`)
 }
 
 /**
  * 评价问答
  * @param {number} id
- * @param {boolean} helpful
+ * @param {number} helpful 1=有帮助 0=无帮助
  */
 export function rateQA(id, helpful) {
-  return request.post(`/qa/rate/${id}`, { helpful })
+  return request.post(`/qa/${id}/rate`, null, { params: { helpful } })
+}
+
+/**
+ * 获取课程知识点
+ * @param {number} courseId
+ */
+export function getKnowledgePoints(courseId) {
+  return request.get('/qa/knowledge', { params: { courseId } })
+}
+
+/**
+ * 生成学习计划
+ * @param {number} courseId
+ * @param {number} days
+ */
+export function generateStudyPlan(courseId, days = 7) {
+  return request.post('/qa/plan', null, { params: { courseId, days } })
+}
+
+/**
+ * 提交答疑请求（人工答疑）
+ * @param {Object} data { courseId, question, teacherId }
+ */
+export function submitQARequest(data) {
+  return request.post('/qa-request', null, { params: data })
+}
+
+/**
+ * 获取待处理答疑列表（教师）
+ * @param {Object} params { teacherId, page, size }
+ */
+export function getPendingRequests(params) {
+  return request.get('/qa-request/pending', { params })
+}
+
+/**
+ * 获取我的答疑请求（学生）
+ * @param {Object} params { page, size }
+ */
+export function getMyRequests(params) {
+  return request.get('/qa-request/my', { params })
+}
+
+/**
+ * 回答问题（教师）
+ * @param {number} id
+ * @param {Object} data { answer, knowledgePoints }
+ */
+export function answerQuestion(id, data) {
+  return request.put(`/qa-request/${id}`, data)
+}
+
+/**
+ * 获取答疑统计（教师/管理员）
+ * @param {Object} params { teacherId }
+ */
+export function getQARequestStatistics(params) {
+  return request.get('/qa-request/statistics', { params })
 }

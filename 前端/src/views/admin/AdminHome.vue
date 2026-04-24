@@ -134,7 +134,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { mockStatistics } from '@/mock/data'
+import { getSystemStats, getUserActivityStats } from '@/api/admin'
 import * as echarts from 'echarts'
 
 const activeChartRef = ref(null)
@@ -149,27 +149,33 @@ const currentTime = computed(() => {
 })
 
 const systemStats = reactive({
-  cpu: 32,
-  memory: 48,
-  disk: 65
+  cpu: 0,
+  memory: 0,
+  disk: 0
 })
 
 const pendingTasks = reactive({
-  reviewResources: 8,
-  reports: 3,
-  inactiveUsers: 12
+  reviewResources: 0,
+  reports: 0,
+  inactiveUsers: 0
 })
 
-const statsData = [
-  { label: '用户总数', value: '1,234', icon: '👤', gradient: 'linear-gradient(135deg, #7C4DFF, #651FFF)', trend: '+12%', trendArrow: '↑', trendClass: 'up' },
-  { label: '问答总数', value: '8,567', icon: '💬', gradient: 'linear-gradient(135deg, #448AFF, #2979FF)', trend: '+8%', trendArrow: '↑', trendClass: 'up' },
-  { label: '回答总数', value: '6,789', icon: '✓', gradient: 'linear-gradient(135deg, #00E676, #00C853)', trend: '+15%', trendArrow: '↑', trendClass: 'up' },
-  { label: '今日提问', value: '156', icon: '⏰', gradient: 'linear-gradient(135deg, #FF8A80, #FF5252)', trend: '', trendArrow: '', trendClass: '' }
-]
+const statsData = ref([
+  { label: '用户总数', value: '0', icon: '👤', gradient: 'linear-gradient(135deg, #7C4DFF, #651FFF)', trend: '', trendArrow: '', trendClass: '' },
+  { label: '问答总数', value: '0', icon: '💬', gradient: 'linear-gradient(135deg, #448AFF, #2979FF)', trend: '', trendArrow: '', trendClass: '' },
+  { label: '资源总数', value: '0', icon: '✓', gradient: 'linear-gradient(135deg, #00E676, #00C853)', trend: '', trendArrow: '', trendClass: '' },
+  { label: '待审核', value: '0', icon: '⏰', gradient: 'linear-gradient(135deg, #FF8A80, #FF5252)', trend: '', trendArrow: '', trendClass: '' }
+])
+
+const activityData = ref({ daily: [], hourly: [] })
 
 const initCharts = () => {
   // 活跃用户趋势
   if (activeChartRef.value) {
+    const daily = activityData.value.daily || []
+    const dates = daily.map(d => d.date)
+    const counts = daily.map(d => d.count)
+
     activeChart = echarts.init(activeChartRef.value)
     activeChart.setOption({
       tooltip: {
@@ -177,11 +183,6 @@ const initCharts = () => {
         backgroundColor: 'rgba(255,255,255,0.95)',
         borderColor: '#E8ECEF',
         textStyle: { color: '#2D3436' }
-      },
-      legend: {
-        data: ['学生', '教师'],
-        bottom: 0,
-        textStyle: { color: '#636E72' }
       },
       grid: {
         left: '3%',
@@ -192,7 +193,7 @@ const initCharts = () => {
       },
       xAxis: {
         type: 'category',
-        data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+        data: dates.length > 0 ? dates : ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: { color: '#636E72' }
@@ -204,7 +205,7 @@ const initCharts = () => {
       },
       series: [
         {
-          name: '学生',
+          name: '活跃用户',
           type: 'line',
           smooth: true,
           symbol: 'none',
@@ -219,25 +220,7 @@ const initCharts = () => {
               ]
             }
           },
-          data: [320, 452, 380, 520, 480, 620, 580]
-        },
-        {
-          name: '教师',
-          type: 'line',
-          smooth: true,
-          symbol: 'none',
-          lineStyle: { color: '#34A853', width: 3 },
-          areaStyle: {
-            color: {
-              type: 'linear',
-              x: 0, y: 0, x2: 0, y2: 1,
-              colorStops: [
-                { offset: 0, color: 'rgba(52, 168, 83, 0.15)' },
-                { offset: 1, color: 'rgba(52, 168, 83, 0)' }
-              ]
-            }
-          },
-          data: [120, 180, 150, 210, 190, 260, 240]
+          data: counts.length > 0 ? counts : [0, 0, 0, 0, 0, 0, 0]
         }
       ]
     })
@@ -265,12 +248,39 @@ const initCharts = () => {
         },
         label: { show: false },
         data: [
-          { value: 980, name: '学生', itemStyle: { color: '#7C4DFF' } },
-          { value: 234, name: '教师', itemStyle: { color: '#34A853' } },
-          { value: 20, name: '管理员', itemStyle: { color: '#FF8C42' } }
+          { value: 0, name: '学生', itemStyle: { color: '#7C4DFF' } },
+          { value: 0, name: '教师', itemStyle: { color: '#34A853' } },
+          { value: 0, name: '管理员', itemStyle: { color: '#FF8C42' } }
         ]
       }]
     })
+  }
+}
+
+const fetchStatistics = async () => {
+  try {
+    const stats = await getSystemStats()
+    if (stats) {
+      statsData.value[0].value = String(stats.totalUsers ?? 0)
+      statsData.value[1].value = String(stats.totalQuestions ?? 0)
+      statsData.value[2].value = String(stats.totalResources ?? 0)
+      statsData.value[3].value = String(stats.pendingResources ?? 0)
+
+      pendingTasks.reviewResources = stats.pendingResources ?? 0
+      pendingTasks.reports = stats.pendingRequests ?? 0
+      pendingTasks.inactiveUsers = 0
+    }
+  } catch (e) {
+    console.error('获取系统统计失败:', e)
+  }
+
+  try {
+    const activity = await getUserActivityStats()
+    if (activity) {
+      activityData.value = activity
+    }
+  } catch (e) {
+    console.error('获取用户活跃度统计失败:', e)
   }
 }
 
@@ -279,7 +289,8 @@ const handleResize = () => {
   userDistChart?.resize()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await fetchStatistics()
   initCharts()
   window.addEventListener('resize', handleResize)
 })
